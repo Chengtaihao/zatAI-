@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星光小马 · 勇气之旅</title>
+<style>
+  :root{
+    --pink:#FFD9E8; --pink-d:#FFC0DA; --peach:#FFE7D6; --cream:#FFF7E3;
+    --mint:#D8F1E6; --sky:#D9ECFF; --lav:#E8E0FF;
+    --ink:#7A6B8B; --ink2:#A79BB6; --card:#FFFDFA;
+    --shadow:0 12px 26px rgba(168,148,196,.22);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;padding:16px;min-height:100%;color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+    background:linear-gradient(160deg,#EFE6FF 0%,#FFE6F1 36%,#FFF4E0 68%,#E4F5FF 100%);
+    display:flex;align-items:center;justify-content:center;
+    overflow-x:hidden;
+  }
+  /* ---------- 背景漂浮星星 ---------- */
+  .star-bg{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .star-bg i{position:absolute;opacity:.5;font-style:normal;animation:floatY 7s ease-in-out infinite}
+  @keyframes floatY{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-20px) rotate(8deg)}}
+  /* ---------- 通用 ---------- */
+  .screen{display:none;width:100%;max-width:760px;position:relative;z-index:1}
+  .screen.active{display:block;animation:popIn .38s ease}
+  @keyframes popIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+  .panel{background:rgba(255,253,250,.92);border-radius:30px;box-shadow:var(--shadow);padding:22px}
+  .center{text-align:center}
+  .btn{
+    border:0;cursor:pointer;font:inherit;font-weight:700;color:var(--ink);background:#fff;
+    border-radius:999px;padding:12px 26px;box-shadow:0 6px 14px rgba(168,148,196,.24);
+    transition:transform .16s ease,box-shadow .16s ease;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 11px 20px rgba(168,148,196,.3)}
+  .btn:active{transform:translateY(0)}
+  .btn.primary{background:linear-gradient(135deg,#FFC9E1,#FFE1B8);color:#8A5E78}
+  .btn.soft{background:#F4EDFF}
+  .btn.tiny{padding:8px 16px;font-size:14px}
+  .sound-btn{padding:9px 16px;font-size:14px;background:#fff}
+  .pony{width:132px;height:132px;display:block;margin:0 auto;filter:drop-shadow(0 8px 12px rgba(168,148,196,.28))}
+  .pony.sm{width:64px;height:64px;margin:0}
+  h1{margin:12px 0 6px;font-size:30px;letter-spacing:2px;color:#8A6E92}
+  h2{margin:0 0 4px;font-size:20px;color:#8A6E92}
+  .sub{margin:0 0 18px;color:var(--ink2);font-size:15px;line-height:1.7}
+  .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  /* ---------- 开始界面 ---------- */
+  .title-glow{background:linear-gradient(90deg,#FFB6D6,#C9B4F0,#9FD8F5,#FFD9A8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tagline{margin:16px auto 4px;max-width:420px;line-height:1.9;color:#8E7FA0}
+  .star-count{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:6px 16px;border-radius:999px;background:#FFF3D9;color:#B48A4E;font-weight:700;font-size:14px}
+  /* ---------- 关卡选择 ---------- */
+  .level-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));gap:14px;margin-top:8px}
+  .lv-card{border:0;font:inherit;color:inherit;cursor:pointer;background:#fff;border-radius:24px;padding:16px 12px;box-shadow:var(--shadow);transition:transform .18s ease}
+  .lv-card:hover{transform:translateY(-3px)}
+  .lv-card.locked{background:#F4F0F8;color:#BEB3CB;box-shadow:none;cursor:not-allowed}
+  .lv-card.locked:hover{transform:none}
+  .lv-no{font-size:12px;letter-spacing:1px;color:var(--ink2)}
+  .lv-emoji{font-size:30px;display:block;margin:6px 0}
+  .lv-name{font-weight:700;font-size:15px}
+  .lv-star{margin-top:6px;font-size:13px;color:#C99F5E;min-height:18px}
+  /* ---------- 游戏界面 ---------- */
+  .hud{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .hud-title{font-weight:700;font-size:17px;color:#8A6E92}
+  .bubble{display:flex;gap:12px;align-items:flex-start;background:#FFFCF4;border-radius:24px;padding:14px 18px;box-shadow:var(--shadow);margin-bottom:16px}
+  .bubble-txt{font-size:14.5px;line-height:1.85;color:#7E6F8F}
+  .bubble-txt p{margin:0 0 2px}
+  .bubble-txt b{color:#B4739B}
+  .hint{text-align:center;color:var(--ink2);font-size:13.5px;margin:16px 0 2px;line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:36px;transform:translate(-50%,20px);background:#fff;color:#8A6E92;
+    padding:11px 24px;border-radius:999px;box-shadow:var(--shadow);font-size:14px;opacity:0;pointer-events:none;transition:.28s;z-index:60}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  /* ---------- 第 1 关：翻牌配对 ---------- */
+  .card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:420px;margin:0 auto}
+  .mcard{position:relative;aspect-ratio:1;border:0;border-radius:20px;cursor:pointer;font-size:26px;
+    background:linear-gradient(135deg,#FFE7F2,#E8E0FF);box-shadow:0 8px 16px rgba(168,148,196,.2);transition:transform .18s ease}
+  .mcard:hover{transform:translateY(-3px)}
+  .mcard span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:.2s}
+  .mcard .mback{color:#C9B4DE;font-size:22px}
+  .mcard .mfront{opacity:0;transform:scale(.8)}
+  .mcard.open .mback{opacity:0}
+  .mcard.open .mfront{opacity:1;transform:scale(1)}
+  .mcard.done{background:linear-gradient(135deg,#FFF4C9,#FFE1C0);animation:bloom .5s ease}
+  @keyframes bloom{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
+  /* ---------- 第 2 关：格子路 ---------- */
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:370px;margin:0 auto}
+  .cell{aspect-ratio:1;border:0;border-radius:16px;cursor:pointer;font-size:19px;
+    background:#FFF3F8;box-shadow:inset 0 0 0 2px #FFE3F0;transition:.15s}
+  .cell:hover{filter:brightness(1.03)}
+  .cell.rock{background:#E9E1D6;box-shadow:inset 0 0 0 2px #DCD2C4;cursor:not-allowed;font-size:17px}
+  .cell.path{background:linear-gradient(135deg,#FFE9BE,#FFD3E5);box-shadow:inset 0 0 0 2px #FFD9A8}
+  .cell.tip{outline:3px solid #FFC3DC;outline-offset:-1px}
+  .cell.goal{background:linear-gradient(135deg,#FFF3C0,#FFE0AE)}
+  /* ---------- 第 3/5 关：拖拽 ---------- */
+  .tray{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px;min-height:76px}
+  .item{cursor:grab;user-select:none;background:#fff;border-radius:22px;padding:10px 18px;font-size:28px;
+    box-shadow:var(--shadow);transition:transform .16s ease}
+  .item:hover{transform:translateY(-3px)}
+  .item.dragging{opacity:.35}
+  .item.taken{visibility:hidden}
+  .ghost{position:fixed;z-index:900;pointer-events:none;opacity:.9;transform:scale(1.08);
+    background:#fff;border-radius:22px;padding:10px 18px;box-shadow:0 14px 24px rgba(168,148,196,.35)}
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:430px;margin:0 auto}
+  .slots.row{grid-template-columns:repeat(4,1fr);max-width:520px;gap:10px}
+  .slot{aspect-ratio:1;border-radius:24px;background:#FBF6FF;border:3px dashed #E4D8F5;
+    display:flex;align-items:center;justify-content:center;font-size:28px;color:#DCD0EC;transition:.18s;position:relative}
+  .slot .ghostMark{opacity:.45;font-size:26px}
+  .slot.over{background:#F2EAFF;border-color:#C6AEF0;transform:scale(1.04)}
+  .slot.filled{border-style:solid;border-color:#FFDCE9;background:#FFF5FA}
+  .slot.filled .ghostMark{opacity:0}
+  .slot.wrong{animation:shake .4s ease}
+  .slot-label{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:11px;color:#B7A9C4}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  /* ---------- 第 4 关：节奏 ---------- */
+  .pads{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:330px;margin:0 auto}
+  .pad{aspect-ratio:1;border:0;border-radius:26px;cursor:pointer;font-size:32px;
+    box-shadow:0 8px 16px rgba(168,148,196,.2);transition:transform .14s ease,filter .14s ease}
+  .pad:hover{transform:translateY(-3px)}
+  .pad.lit{filter:brightness(1.25);transform:scale(1.07);box-shadow:0 0 0 5px #FFF4C4,0 10px 20px rgba(168,148,196,.3)}
+  /* ---------- 弹窗 ---------- */
+  .modal{position:fixed;inset:0;background:rgba(122,107,139,.28);backdrop-filter:blur(4px);display:flex;
+    align-items:center;justify-content:center;padding:20px;z-index:80}
+  .modal.hidden{display:none}
+  .modal-card{background:#FFFDF8;border-radius:32px;box-shadow:0 20px 40px rgba(140,120,170,.3);
+    padding:28px 26px;max-width:430px;width:100%;text-align:center;animation:popIn .34s ease}
+  .burst{font-size:46px;line-height:1;animation:bloom .8s ease}
+  .modal-card h3{margin:12px 0 8px;color:#8A6E92;font-size:20px}
+  .modal-card p{margin:0 0 6px;color:#7E6F8F;line-height:1.9;font-size:14.5px}
+  .modal-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+  .shard-line{display:inline-flex;gap:8px;margin:8px 0 14px;font-size:22px}
+  .shard-line span{opacity:.25;transition:.3s}
+  .shard-line span.on{opacity:1;transform:scale(1.12)}
+</style>
+</head>
+<body>
+<div class="star-bg" id="starBg"></div>
+
+<!-- ================= 开始界面 ================= -->
+<section id="screen-start" class="screen active">
+  <div class="panel center">
+    <svg class="pony" viewBox="0 0 140 140" aria-label="小马小朵">
+      <circle cx="30" cy="58" r="19" fill="#F5C6E0"/>
+      <circle cx="44" cy="40" r="21" fill="#C9B8F5"/>
+      <circle cx="70" cy="30" r="21" fill="#A9D8F5"/>
+      <circle cx="96" cy="42" r="20" fill="#F7D9A9"/>
+      <circle cx="108" cy="64" r="16" fill="#BFE8D4"/>
+      <ellipse cx="37" cy="52" rx="9" ry="14" fill="#FFF1E6" transform="rotate(-22 37 52)"/>
+      <ellipse cx="103" cy="54" rx="9" ry="14" fill="#FFF1E6" transform="rotate(22 103 54)"/>
+      <ellipse cx="70" cy="82" rx="44" ry="40" fill="#FFF1E6"/>
+      <path d="M70 56 l3.2 6.4 7 .9 -5.1 4.8 1.3 7 -6.4 -3.4 -6.4 3.4 1.3 -7 -5.1 -4.8 7 -.9z" fill="#FFE39A"/>
+      <ellipse cx="52" cy="82" rx="7" ry="9.5" fill="#6B5B7B"/>
+      <ellipse cx="88" cy="82" rx="7" ry="9.5" fill="#6B5B7B"/>
+      <circle cx="49.5" cy="78" r="2.6" fill="#fff"/>
+      <circle cx="85.5" cy="78" r="2.6" fill="#fff"/>
+      <ellipse cx="42" cy="97" rx="9" ry="6" fill="#FFC7D8" opacity=".8"/>
+      <ellipse cx="98" cy="97" rx="9" ry="6" fill="#FFC7D8" opacity=".8"/>
+      <path d="M64 101 q6 6 12 0" stroke="#B79FAD" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    </svg>
+    <h1><span class="title-glow">星光小马 · 勇气之旅</span></h1>
+    <p class="tagline">小朵要穿过五段小路，捡起散落的星光碎片。<br>不着急，走一步，就亮一点。</p>
+    <div class="star-count" id="shardHud">🌟 已收集星光碎片 0 / 5</div>
+    <div class="row" style="margin-top:22px">
+      <button class="btn primary" id="btnStart">开始旅程</button>
+      <button class="btn soft" id="btnLevels">关卡选择</button>
+      <button class="btn sound-btn" data-sound>🎵 音乐开</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 关卡选择 ================= -->
+<section id="screen-levels" class="screen">
+  <div class="panel">
+    <div class="hud">
+      <button class="btn tiny soft" data-back>← 回到开始</button>
+      <div class="hud-title">选择一段小路</div>
+      <button class="btn sound-btn" data-sound>🎵 音乐开</button>
+    </div>
+    <div class="level-grid" id="levelGrid"></div>
+    <p class="hint">通关一段，下一段小路就会亮起来 ✨</p>
+  </div>
+</section>
+
+<!-- ================= 游戏界面 ================= -->
+<section id="screen-game" class="screen">
+  <div class="panel">
+    <div class="hud">
+      <button class="btn tiny soft" id="btnBack">← 返回</button>
+      <div class="hud-title" id="gameTitle">第 1 关</div>
+      <button class="btn sound-btn" data-sound>🎵 音乐开</button>
+    </div>
+    <div class="bubble">
+      <svg class="pony sm" viewBox="0 0 140 140" aria-hidden="true">
+        <circle cx="30" cy="58" r="19" fill="#F5C6E0"/>
+        <circle cx="44" cy="40" r="21" fill="#C9B8F5"/>
+        <circle cx="70" cy="30" r="21" fill="#A9D8F5"/>
+        <circle cx="96" cy="42" r="20" fill="#F7D9A9"/>
+        <ellipse cx="37" cy="52" rx="9" ry="14" fill="#FFF1E6" transform="rotate(-22 37 52)"/>
+        <ellipse cx="103" cy="54" rx="9" ry="14" fill="#FFF1E6" transform="rotate(22 103 54)"/>
+        <ellipse cx="70" cy="82" rx="44" ry="40" fill="#FFF1E6"/>
+        <ellipse cx="52" cy="82" rx="6" ry="8" fill="#6B5B7B"/>
+        <ellipse cx="88" cy="82" rx="6" ry="8" fill="#6B5B7B"/>
+        <ellipse cx="42" cy="97" rx="8" ry="5" fill="#FFC7D8" opacity=".8"/>
+        <ellipse cx="98" cy="97" rx="8" ry="5" fill="#FFC7D8" opacity=".8"/>
+        <path d="M64 101 q6 6 12 0" stroke="#B79FAD" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="bubble-txt" id="bubbleText"></div>
+    </div>
+    <div id="play" class="play"></div>
+    <p class="hint" id="gameHint"></p>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<!-- ================= 通关弹窗 ================= -->
+<div class="modal hidden" id="modal">
+  <div class="modal-card">
+    <div class="burst" id="modalIcon">🌟</div>
+    <h3 id="modalTitle"></h3>
+    <div class="shard-line" id="modalShards"></div>
+    <p id="modalText"></p>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+
+  /* ============ 状态 ============ */
+  var state = { shards:0, unlocked:1, sound:true };
+  var cur = 1;
+
+  /* ============ 背景漂浮星星 ============ */
+  (function(){
+    var glyphs = ["✦","✧","⭐","🌸","❀","☁"], bg = $("#starBg"), html = "";
+    for (var i=0;i<26;i++){
+      var g = glyphs[i % glyphs.length];
+      html += '<i style="left:' + (Math.random()*97).toFixed(1) + '%;top:' + (Math.random()*95).toFixed(1) +
+              '%;font-size:' + (12 + Math.random()*14).toFixed(0) + 'px;animation-delay:' +
+              (Math.random()*6).toFixed(2) + 's">' + g + '</i>';
+    }
+    bg.innerHTML = html;
+  })();
+
+  /* ============ 温柔小音效（Web Audio，无外部音频） ============ */
+  var ac = null, bgmTimer = null;
+  function audio(){ if(!ac){ var C = window.AudioContext || window.webkitAudioContext; if(C) ac = new C(); } return ac; }
+  function tone(freq, dur, type, vol, delay){
+    var a = audio(); if(!a) return;
+    var t = a.currentTime + (delay || 0);
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol || .06, t + .06);
+    g.gain.exponentialRampToValueAtTime(.0008, t + (dur || .5));
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + (dur || .5) + .05);
+  }
+  var MEL = [523.25, 659.25, 783.99, 659.25, 587.33, 523.25, 440.00, 587.33];
+  var BASS = [130.81, 174.61, 196.00, 164.81];
+  function startBgm(){
+    if(bgmTimer) return;
+    var i = 0;
+    bgmTimer = setInterval(function(){
+      if(!state.sound) return;
+      tone(MEL[i % MEL.length], 1.15, "sine", .032);
+      if(i % 2 === 0) tone(BASS[(i >> 1) % BASS.length], 1.7, "triangle", .026);
+      i++;
+    }, 640);
+  }
+  function stopBgm(){ if(bgmTimer){ clearInterval(bgmTimer); bgmTimer = null; } }
+  function sfxClick(){ tone(660, .16, "sine", .05); }
+  function sfxPlace(){ tone(740, .2, "triangle", .055); }
+  function sfxWin(){ [523.25,659.25,783.99,1046.5].forEach(function(f,k){ tone(f, .7, "sine", .06, k*.13); }); }
+
+  function syncSoundBtns(){
+    var txt = state.sound ? "🎵 音乐开" : "🔇 音乐关";
+    [].forEach.call(document.querySelectorAll("[data-sound]"), function(b){ b.textContent = txt; });
+  }
+  document.addEventListener("click", function once(){
+    if(state.sound){ audio(); if(ac && ac.resume) ac.resume(); startBgm(); }
+  }, {once:true});
+
+  /* ============ 通用界面切换与提示 ============ */
+  function showScreen(id){
+    [].forEach.call(document.querySelectorAll(".screen"), function(s){ s.classList.remove("active"); });
+    $("#" + id).classList.add("active");
+    window.scrollTo(0,0);
+  }
+  var toastTimer = null;
+  function toast(msg){
+    var el = $("#toast"); el.textContent = msg; el.classList.add("show");
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 1800);
+  }
+  function updateShardHud(){
+    $("#shardHud").textContent = "🌟 已收集星光碎片 " + state.shards + " / 5";
+  }
+
+  /* ============ 鼠标拖拽（点击 + 拖拽，无需复杂操作） ============ */
+  function attachDrag(item, onDrop){
+    item.addEventListener("mousedown", function(e){
+      e.preventDefault();
+      sfxClick();
+      var r = item.getBoundingClientRect();
+      var offX = e.clientX - r.left, offY = e.clientY - r.top;
+      var ghost = item.cloneNode(true);
+      ghost.classList.add("ghost");
+      ghost.style.width = r.width + "px";
+      ghost.style.height = r.height + "px";
+      ghost.style.left = r.left + "px";
+      ghost.style.top = r.top + "px";
+      document.body.appendChild(ghost);
+      item.classList.add("dragging");
+
+      function pick(ev){
+        var pts = document.elementsFromPoint(ev.clientX, ev.clientY), i;
+        for(i=0;i<pts.length;i++){ if(pts[i].classList && pts[i].classList.contains("slot")) return pts[i]; }
+        return null;
+      }
+      function clearOver(){
+        [].forEach.call(document.querySelectorAll(".slot.over"), function(s){ s.classList.remove("over"); });
+      }
+      function onMove(ev){
+        ghost.style.left = (ev.clientX - offX) + "px";
+        ghost.style.top = (ev.clientY - offY) + "px";
+        clearOver();
+        var s = pick(ev);
+        if(s && !s.classList.contains("filled")) s.classList.add("over");
+      }
+      function onUp(ev){
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        ghost.remove(); item.classList.remove("dragging");
+        clearOver();
+        var slot = pick(ev);
+        if(slot) onDrop(item, slot);
+      }
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  }
+
+  /* ============ 关卡数据 ============ */
+  var LEVELS = [
+    {
+      name: "星光的回声",
+      tip: "点一点小卡片，把一样的小图案配成一对",
+      intro: ["嗨，我是小朵。","草地上散落着一些会发光的小图案，","把它们两两配成一对，第一颗星光就会亮起来啦。"],
+      outro: "第一颗星光碎片亮起来了。它说：愿意试一试的你，本来就很勇敢。"
+    },
+    {
+      name: "星光小路",
+      tip: "从家门口出发，一格一格走到星星那里；点最后一格可以退回一步",
+      intro: ["小路被灰灰的小石头挡住了。","不过没关系，我们慢慢来，","一格一格地铺出属于自己的路。"],
+      outro: "这条路是你自己一步一步走出来的。不用急，走得慢也算数。"
+    },
+    {
+      name: "温柔的摆放",
+      tip: "把三样小东西，轻轻拖进和它们一样的凹槽里",
+      intro: ["风把三件小东西吹乱了。","它们只是想回到自己的位置，","就像我们一样，找到合适的地方就会很安心。"],
+      outro: "不必把自己塞进别人的形状里，你本来就有适合你的位置。"
+    },
+    {
+      name: "记忆的节奏",
+      tip: "先看清星星亮起的顺序，再按一样的顺序点一遍",
+      intro: ["星星们想和你玩个小游戏。","它们会轮流亮起来，记住这个顺序。","记不住也没关系，它们愿意再亮一次给你看。"],
+      outro: "错了就再来一次。星星从不会因为你要多试几遍，就少爱你一点。"
+    },
+    {
+      name: "勇气阶梯",
+      tip: "把四颗星星从左到右从小到大排好，让它们一点一点变亮",
+      intro: ["最后一颗星光，藏在一段小阶梯上。","把它们从小到大排好，","就像勇气，也是一点一点攒起来的。"],
+      outro: "你看，五颗星光碎片都亮起来了。慢慢变好，本来就是最勇敢的事。"
+    }
+  ];
+
+  /* ============ 第 1 关：翻牌配对 ============ */
+  function levelMatch(root){
+    var syms = ["🌸","⭐","🌙","🍀"];
+    var deck = syms.concat(syms).sort(function(){ return Math.random() - .5; });
+    var first = null, lock = false, matched = 0;
+    var grid = document.createElement("div");
+    grid.className = "card-grid";
+    deck.forEach(function(s){
+      var c = document.createElement("button");
+      c.type = "button";
+      c.className = "mcard";
+      c.dataset.sym = s;
+      c.innerHTML = '<span class="mback">?</span><span class="mfront">' + s + '</span>';
+      c.addEventListener("click", function(){
+        if(lock || c.classList.contains("open") || c.classList.contains("done")) return;
+        c.classList.add("open"); sfxClick();
+        if(!first){ first = c; return; }
+        if(first.dataset.sym === c.dataset.sym){
+          first.classList.add("done"); c.classList.add("done");
+          first = null; matched++; sfxPlace();
+          if(matched === syms.length) setTimeout(levelWin, 460);
+        } else {
+          lock = true;
+          var a = first, b = c; first = null;
+          setTimeout(function(){ a.classList.remove("open"); b.classList.remove("open"); lock = false; }, 720);
+        }
+      });
+      grid.appendChild(c);
+    });
+    root.appendChild(grid);
+  }
+
+  /* ============ 第 2 关：规划小路 ============ */
+  function levelPath(root){
+    var N = 5, rocks = [[2,0],[2,1],[1,3],[3,3]], path = [[0,0]];
+    var isRock = function(r,c){ return rocks.some(function(k){ return k[0]===r && k[1]===c; }); };
+    var inPath = function(r,c){ return path.some(function(k){ return k[0]===r && k[1]===c; }); };
+    var grid = document.createElement("div");
+    grid.className = "grid5";
+    var cells = [];
+    for(var r=0;r<N;r++){
+      for(var c=0;c<N;c++){
+        (function(r,c){
+          var b = document.createElement("button");
+          b.type = "button"; b.className = "cell";
+          b.addEventListener("click", function(){
+            if(isRock(r,c)){ toast("这里有小石头，绕一绕吧～"); return; }
+            var last = path[path.length-1];
+            if(r===last[0] && c===last[1] && path.length>1){ path.pop(); sfxClick(); render(); return; }
+            var adj = Math.abs(r-last[0]) + Math.abs(c-last[1]) === 1;
+            if(!adj){ toast("要挨着上一格走哦～"); return; }
+            if(inPath(r,c)){ toast("这一格已经铺好啦"); return; }
+            path.push([r,c]); sfxPlace(); render();
+            if(r===N-1 && c===N-1) setTimeout(levelWin, 420);
+          });
+          cells.push({r:r, c:c, el:b});
+          grid.appendChild(b);
+        })(r,c);
+      }
+    }
+    function render(){
+      var last = path[path.length-1];
+      cells.forEach(function(o){
+        var el = o.el;
+        el.className = "cell";
+        el.textContent = "";
+        if(isRock(o.r,o.c)){ el.classList.add("rock"); el.textContent = "🪨"; return; }
+        if(inPath(o.r,o.c)) el.classList.add("path");
+        if(o.r===0 && o.c===0){ el.textContent = "🏡"; return; }
+        if(o.r===N-1 && o.c===N-1){ el.classList.add("goal"); el.textContent = "⭐"; return; }
+        if(o.r===last[0] && o.c===last[1]) el.classList.add("tip");
+      });
+    }
+    render();
+    root.appendChild(grid);
+  }
+
+  /* ============ 第 3 关：拖拽摆放 ============ */
+  function levelPlace(root){
+    var items = [{k:"star",sym:"⭐",lb:"星光"},{k:"moon",sym:"🌙",lb:"月牙"},{k:"cloud",sym:"☁️",lb:"云朵"}];
+    var tray = document.createElement("div"); tray.className = "tray";
+    var slots = document.createElement("div"); slots.className = "slots";
+    var done = 0;
+
+    items.forEach(function(it){
+      var el = document.createElement("div");
+      el.className = "item"; el.dataset.k = it.k; el.dataset.sym = it.sym; el.textContent = it.sym;
+      el.title = it.lb;
+      attachDrag(el, function(item, slot){
+        if(slot.classList.contains("filled")){ toast("这一格已经有东西啦"); return; }
+        if(slot.dataset.k !== item.dataset.k){
+          slot.classList.add("wrong");
+          setTimeout(function(){ slot.classList.remove("wrong"); }, 420);
+          toast("这里好像不太合身，再找找看～");
+          return;
+        }
+        item.classList.add("taken");
+        slot.classList.add("filled"); slot.textContent = it.sym;
+        sfxPlace(); done++;
+        if(done === items.length) setTimeout(levelWin, 420);
+      });
+      tray.appendChild(el);
+    });
+
+    items.slice().sort(function(){ return Math.random() - .5; }).forEach(function(it){
+      var s = document.createElement("div");
+      s.className = "slot"; s.dataset.k = it.k;
+      s.innerHTML = '<span class="ghostMark">' + it.sym + '</span><span class="slot-label">' + it.lb + '</span>';
+      slots.appendChild(s);
+    });
+
+    root.appendChild(tray); root.appendChild(slots);
+    toast("按住小东西，拖到它的位置上～");
+  }
+
+  /* ============ 第 4 关：记忆的节奏 ============ */
+  function levelSimon(root){
+    var pads = [
+      {sym:"🌸", bg:"#FFD9E8", f:523.25},
+      {sym:"⭐", bg:"#FFF0C2", f:659.25},
+      {sym:"🌙", bg:"#D9ECFF", f:783.99},
+      {sym:"🍀", bg:"#D8F1E6", f:587.33}
+    ];
+    var seq = [], i, k;
+    for(i=0;i<4;i++){ do { k = Math.floor(Math.random()*4); } while(i>0 && k===seq[i-1]); seq.push(k); }
+    var input = [], playing = false, ready = false, over = false;
+
+    var wrap = document.createElement("div");
+    var bar = document.createElement("div"); bar.className = "row"; bar.style.marginBottom = "16px";
+    var startBtn = document.createElement("button");
+    startBtn.type = "button"; startBtn.className = "btn primary"; startBtn.textContent = "开始看星星 ✨";
+    bar.appendChild(startBtn);
+    var grid = document.createElement("div"); grid.className = "pads";
+    var els = [];
+
+    pads.forEach(function(p, idx){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "pad"; b.style.background = p.bg; b.textContent = p.sym;
+      b.addEventListener("click", function(){
+        if(!ready || playing || over) return;
+        light(idx);
+        if(seq[input.length] !== idx){
+          ready = false;
+          setTimeout(function(){ toast("没关系，我们再看一遍～"); replay(); }, 420);
+          return;
+        }
+        input.push(idx);
+        if(input.length === seq.length){ over = true; ready = false; setTimeout(levelWin, 420); }
+      });
+      els.push(b); grid.appendChild(b);
+    });
+
+    function light(idx){
+      els[idx].classList.add("lit"); tone(pads[idx].f, .36, "sine", .07);
+      setTimeout(function(){ els[idx].classList.remove("lit"); }, 440);
+    }
+    function replay(){
+      playing = true; ready = false; input = [];
+      seq.forEach(function(kk, idx){
+        setTimeout(function(){
+          light(kk);
+          if(idx === seq.length - 1){
+            setTimeout(function(){ playing = false; ready = true; toast("该你啦，按刚才的顺序点亮星星～"); }, 560);
+          }
+        }, 420 + idx * 680);
+      });
+    }
+    startBtn.addEventListener("click", function(){ if(!playing && !over) replay(); });
+
+    wrap.appendChild(bar); wrap.appendChild(grid);
+    root.appendChild(wrap);
+    toast("先点上面的按钮，看看星星的顺序～");
+  }
+
+  /* ============ 第 5 关：勇气阶梯（从小到大排序） ============ */
+  function levelOrder(root){
+    var sizes = [26,36,46,56];
+    var pool = sizes.map(function(s, i){ return { sz:s, id:i }; }).sort(function(){ return Math.random() - .5; });
+    var placed = [null,null,null,null], done = 0;
+
+    var tray = document.createElement("div"); tray.className = "tray";
+    var slotBox = document.createElement("div"); slotBox.className = "slots row";
+
+    pool.forEach(function(o){
+      var el = document.createElement("div");
+      el.className = "item"; el.dataset.sz = o.sz;
+      el.style.fontSize = o.sz + "px"; el.style.lineHeight = "1"; el.textContent = "⭐";
+      attachDrag(el, function(item, slot){
+        if(slot.classList.contains("filled")){ toast("这一格已经有星星啦"); return; }
+        place(item, +slot.dataset.idx);
+      });
+      tray.appendChild(el);
+    });
+
+    function makeStar(sz){
+      var s = document.createElement("div");
+      s.className = "slot"; s.style.borderStyle = "solid"; s.style.borderColor = "#FFDCE9";
+      s.style.background = "#FFF5FA";
+      s.innerHTML = '<span style="font-size:' + sz + 'px;line-height:1">⭐</span>';
+      return s;
+    }
+    for(var i=0;i<4;i++){
+      (function(i){
+        var s = document.createElement("div");
+        s.className = "slot"; s.dataset.idx = i;
+        s.innerHTML = '<span class="slot-label">第 ' + (i+1) + ' 格</span>';
+        s.addEventListener("click", function(){ if(placed[i] !== null) takeBack(i); });
+        slotBox.appendChild(s);
+      })(i);
+    }
+    var slots = slotBox.children;
+
+    function place(item, idx){
+      if(placed[idx] !== null) return;
+      item.classList.add("taken");
+      placed[idx] = { sz:+item.dataset.sz, el:item };
+      slots[idx].classList.add("filled");
+      slots[idx].innerHTML = '<span style="font-size:' + item.dataset.sz + 'px;line-height:1">⭐</span><span class="slot-label">第 ' + (idx+1) + ' 格</span>';
+      sfxPlace(); done++;
+      if(done === 4) setTimeout(check, 320);
+    }
+    function takeBack(idx){
+      var p = placed[idx]; if(!p) return;
+      placed[idx] = null; done--;
+      p.el.classList.remove("taken");
+      slots[idx].classList.remove("filled");
+      slots[idx].innerHTML = '<span class="slot-label">第 ' + (idx+1) + ' 格</span>';
+      sfxClick();
+    }
+    function check(){
+      var ok = true;
+      for(var i=1;i<4;i++){ if(placed[i].sz <= placed[i-1].sz) ok = false; }
+      if(ok){ levelWin(); return; }
+      [].forEach.call(slots, function(s){ s.classList.add("wrong"); });
+      toast("再排排看，让它们一点一点变大～");
+      setTimeout(function(){
+        [].forEach.call(slots, function(s){ s.classList.remove("wrong"); });
+        [3,2,1,0].forEach(function(i){ if(placed[i]) takeBack(i); });
+      }, 900);
+    }
+
+    root.appendChild(tray); root.appendChild(slotBox);
+    toast("按住星星，拖进左边的格子，从小到大排好～");
+  }
+
+  var MOUNT = { 1:levelMatch, 2:levelPath, 3:levelPlace, 4:levelSimon, 5:levelOrder };
+
+  /* ============ 关卡选择渲染 ============ */
+  function renderLevels(){
+    var emoji = ["🃏","🛤️","🧸","🎼","🪜"];
+    var grid = $("#levelGrid"), html = "";
+    LEVELS.forEach(function(lv, i){
+      var n = i + 1, locked = n > state.unlocked, got = n <= state.shards;
+      html += '<button type="button" class="lv-card' + (locked ? ' locked' : '') + '" data-lv="' + n + '">' +
+                '<div class="lv-no">第 ' + n + ' 关</div>' +
+                '<span class="lv-emoji">' + (locked ? "🔒" : emoji[i]) + '</span>' +
+                '<div class="lv-name">' + lv.name + '</div>' +
+                '<div class="lv-star">' + (got ? "🌟 已点亮" : (locked ? "还没亮起来" : "可以进入")) + '</div>' +
+              '</button>';
+    });
+    grid.innerHTML = html;
+    [].forEach.call(grid.querySelectorAll(".lv-card"), function(b){
+      b.addEventListener("click", function(){
+        if(b.classList.contains("locked")){ toast("这一关还没亮起来，先走完前面的路吧～"); return; }
+        openLevel(+b.dataset.lv);
+      });
+    });
+  }
+
+  /* ============ 进入关卡 / 通关 ============ */
+  function openLevel(n){
+    cur = n;
+    var lv = LEVELS[n-1];
+    $("#gameTitle").textContent = "第 " + n + " 关 · " + lv.name;
+    $("#bubbleText").innerHTML = lv.intro.map(function(t){ return "<p>" + t + "</p>"; }).join("");
+    $("#gameHint").textContent = lv.tip;
+    var root = $("#play");
+    root.innerHTML = "";
+    MOUNT[n](root);
+    showScreen("screen-game");
+  }
+
+  var ended = false;
+  function levelWin(){
+    if(ended) return;
+    ended = true;
+    sfxWin();
+    if(cur > state.shards) state.shards = cur;
+    if(cur + 1 <= LEVELS.length && cur + 1 > state.unlocked) state.unlocked = cur + 1;
+    updateShardHud(); renderLevels();
+    var lv = LEVELS[cur-1];
+    if(cur === LEVELS.length) showEnding(); else showWin(lv);
+    ended = false;
+  }
+
+  function shardLine(){
+    var html = "";
+    for(var i=1;i<=5;i++) html += '<span class="' + (i <= state.shards ? "on" : "") + '">🌟</span>';
+    return html;
+  }
+  function openModal(icon, title, text, actions){
+    $("#modalIcon").textContent = icon;
+    $("#modalTitle").textContent = title;
+    $("#modalShards").innerHTML = shardLine();
+    $("#modalText").innerHTML = text;
+    var box = $("#modalActions"); box.innerHTML = "";
+    actions.forEach(function(a){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "btn " + (a.primary ? "primary" : "soft"); b.textContent = a.label;
+      b.addEventListener("click", a.fn);
+      box.appendChild(b);
+    });
+    $("#modal").classList.remove("hidden");
+  }
+  function closeModal(){ $("#modal").classList.add("hidden"); }
+
+  function showWin(lv){
+    openModal("🌟", "第 " + cur + " 颗星光碎片收好啦",
+      lv.outro,
+      [
+        { label: "进入下一段小路", primary:true, fn:function(){ closeModal(); openLevel(cur + 1); } },
+        { label: "回到关卡选择", fn:function(){ closeModal(); showScreen("screen-levels"); } }
+      ]);
+  }
+  function showEnding(){
+    openModal("✨", "五颗星光碎片都亮起来了",
+      "小朵举着满手的星光，走过一段不算长、却很温柔的路。<br><br>" +
+      "你不必一下子变得很亮很亮，<br>只要愿意再往前一点点，光就会一直跟着你。<br><br>" +
+      "—— 谢谢你来陪小朵走完这一趟。",
+      [
+        { label: "回到关卡选择", primary:true, fn:function(){ closeModal(); showScreen("screen-levels"); } },
+        { label: "再走一遍", fn:function(){ closeModal(); openLevel(1); } }
+      ]);
+  }
+
+  /* ============ 事件绑定 ============ */
+  $("#btnStart").addEventListener("click", function(){
+    audio(); if(ac && ac.resume) ac.resume();
+    if(state.sound) startBgm();
+    openLevel(state.unlocked > LEVELS.length ? LEVELS.length : state.unlocked);
+  });
+  $("#btnLevels").addEventListener("click", function(){ renderLevels(); showScreen("screen-levels"); });
+  $("#btnBack").addEventListener("click", function(){ renderLevels(); showScreen("screen-levels"); });
+  [].forEach.call(document.querySelectorAll("[data-sound]"), function(b){
+    b.addEventListener("click", function(){
+      state.sound = !state.sound;
+      if(state.sound){ audio(); if(ac && ac.resume) ac.resume(); startBgm(); } else { stopBgm(); }
+      syncSoundBtns();
+      toast(state.sound ? "音乐打开啦 🎵" : "音乐先安静一会儿 🔇");
+    });
+  });
+  [].forEach.call(document.querySelectorAll("[data-back]"), function(b){
+    b.addEventListener("click", function(){ showScreen("screen-start"); });
+  });
+
+  updateShardHud(); renderLevels(); syncSoundBtns();
+})();
+</script>
+</body>
+</html>
